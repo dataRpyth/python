@@ -1,0 +1,10 @@
+.idea
+**/*.pyc
+**/*.json
+**.csv
+**.xls
+tmp
+**/log
+**/output
+**/.DS_Store
+venv/

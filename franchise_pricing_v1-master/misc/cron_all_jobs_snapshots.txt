@@ -1,0 +1,102 @@
+#==========
+#2019.12.05
+#==========
+
+# hotel daily preprocess
+
+0 1 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/hotel_preprocess/cron.py -bo 1,2 -pt walkinRaisePrepare
+
+30 9 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/hotel_preprocess/cron.py -bo 1,2 -pt liquidationPrepare
+
+# China2.0 hourly pricing
+
+0 4-9 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1
+
+50 9 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1 -includeOtaNonDirectHotels
+
+50 10 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1
+
+50 11 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1 -includeOtaNonDirectHotels
+
+0 13 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1
+
+0 14 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1
+
+50 14 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1 -includeOtaNonDirectHotels
+
+50 15 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1 -includeOtaNonDirectHotels
+
+50 16 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1
+
+50 17 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1 -includeOtaNonDirectHotels
+
+50 18 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1 -liquidationFlag 29 -includeOtaNonDirectHotels
+
+30 20 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1 -liquidationFlag 29_2 -includeOtaNonDirectHotels
+
+0 21 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1
+
+0 22 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1
+
+0 23 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1
+
+30 23 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1
+
+###############10.1 2.0#######
+
+#35 9 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1 -includeOtaNonDirectHotels -otaPriceRaise
+
+#35 10 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 2 -includeOtaNonDirectHotels -otaPriceRaise
+
+#35 12 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1 -includeOtaNonDirectHotels -otaPriceRaise
+
+#35 13 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 2 -includeOtaNonDirectHotels -otaPriceRaise
+
+#35 15 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1 -includeOtaNonDirectHotels -otaPriceRaise
+
+#35 16 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 2 -includeOtaNonDirectHotels -otaPriceRaise
+
+#35 18 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1 -includeOtaNonDirectHotels -otaPriceRaise
+
+#35 19 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 2 -includeOtaNonDirectHotels -otaPriceRaise
+
+##0 22-23 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1 -otaPriceRaise
+
+##30 23 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/CHINA_Rebirth/cron.py -bo 1 -otaPriceRaise
+
+
+#### hourly pricing for om
+30 11 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/om/cron.py -bo 1 -otaPricing
+
+30 12 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/om/cron.py -bo 2 -otaPricing
+
+30 13 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/om/cron.py -bo 3 -otaPricing
+
+30 14 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/om/cron.py -bo 4 -otaPricing
+
+30 15 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/om/cron.py -bo 5 -otaPricing
+
+30 16 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/om/cron.py -bo 6 -otaPricing
+
+30 17 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/om/cron.py -bo 7 -otaPricing
+
+30 18 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/om/cron.py -bo 8 -otaPricing
+
+30 19 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/om/cron.py -bo 9 -otaPricing
+
+
+#### Liquidation & LiquidationRelieving
+40 13 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/Liquidation/cron.py -bo 1,2 -jobType 1 -liquidationBatch 49 -predOcc 0.6
+
+40 15 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/Liquidation/cron.py -bo 1,2 -jobType 1 -liquidationBatch 39 -predOcc 0.7
+
+40 18 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/Liquidation/cron.py -bo 1,2 -jobType 1 -liquidationBatch 29 -predOcc 0.8
+
+10 20 * * * /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/Liquidation/cron.py -bo 1,2 -jobType 1 -liquidationBatch 29_2 -predOcc 0.9
+
+##Hourly room
+# 10 22 * * * /usr/bin/python3.6 /app/gitlab-ci/franchise_pricing_v1/master/Hourly_room/cron.py
+0 23 * * 2 /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/Hourly_room/cron.py -bo 1,2 -modLen 2 -modIdx 1
+
+0 23 * * 3 /app/gitlab-ci/franchise_pricing_v1/master/bin/start.sh /app/gitlab-ci/franchise_pricing_v1/master/Hourly_room/cron.py -bo 1,2 -modLen 2 -modIdx 2
+

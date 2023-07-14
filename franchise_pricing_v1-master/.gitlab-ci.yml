@@ -1,0 +1,234 @@
+variables:
+    SSH_IGNORE_HOST_CHECKING: "-o StrictHostKeyChecking=no"
+    TAR_FILE_NAME: "franchise_pricing_v1_compressed.tar.gz"
+    BACKUP_TAR_FILE_NAME: "franchise_pricing_v1_old.tar.gz"
+    BACKUP_FILE_PATH: "/home/gitlab-ci/${BACKUP_TAR_FILE_NAME}"
+
+    DEV_DEPLOY_TARGET_HOST: "192.168.22.149"
+    TEST_DEPLOY_TARGET_HOST: "192.168.22.149"
+    UAT1_DEPLOY_TARGET_HOST: "10.203.0.87"
+    UAT2_DEPLOY_TARGET_HOST: "10.203.3.152"
+    PROD1_DEPLOY_TARGET_HOST: "10.203.0.87"
+    PROD2_DEPLOY_TARGET_HOST: "10.203.3.152"
+
+    DEV_AUTH_USER_WITH_URL: "gitlab-ci@${DEV_DEPLOY_TARGET_HOST}"
+    TEST_AUTH_USER_WITH_URL: "gitlab-ci@${TEST_DEPLOY_TARGET_HOST}"
+    UAT1_AUTH_USER_WITH_URL: "gitlab-ci@${UAT1_DEPLOY_TARGET_HOST}"
+    UAT2_AUTH_USER_WITH_URL: "gitlab-ci@${UAT2_DEPLOY_TARGET_HOST}"
+    PROD1_AUTH_USER_WITH_URL: "gitlab-ci@${PROD1_DEPLOY_TARGET_HOST}"
+    PROD2_AUTH_USER_WITH_URL: "gitlab-ci@${PROD2_DEPLOY_TARGET_HOST}"
+
+    DEV_EXTRACT_TARGET_FOLDER: "/app/gitlab-ci/$CI_PROJECT_NAME/$CI_COMMIT_REF_NAME"
+    TEST_EXTRACT_TARGET_FOLDER: "/app/gitlab-ci/$CI_PROJECT_NAME/$CI_COMMIT_REF_NAME"
+    UAT1_EXTRACT_TARGET_FOLDER: "/app/gitlab-ci/$CI_PROJECT_NAME/$CI_COMMIT_REF_NAME"
+    UAT2_EXTRACT_TARGET_FOLDER: "/app/gitlab-ci/$CI_PROJECT_NAME/$CI_COMMIT_REF_NAME"
+    PROD1_EXTRACT_TARGET_FOLDER: "/app/gitlab-ci/$CI_PROJECT_NAME/$CI_COMMIT_REF_NAME"
+    PROD2_EXTRACT_TARGET_FOLDER: "/app/gitlab-ci/$CI_PROJECT_NAME/$CI_COMMIT_REF_NAME"
+
+    DEV_COMPRESS_FILE_TARGET_FOLDER: "/app/gitlab-ci/$CI_PROJECT_NAME/$CI_COMMIT_REF_NAME"
+    TEST_COMPRESS_FILE_TARGET_FOLDER: "/app/gitlab-ci/$CI_PROJECT_NAME/$CI_COMMIT_REF_NAME"
+    UAT1_COMPRESS_FILE_TARGET_FOLDER: "/app/gitlab-ci/$CI_PROJECT_NAME/$CI_COMMIT_REF_NAME"
+    UAT2_COMPRESS_FILE_TARGET_FOLDER: "/app/gitlab-ci/$CI_PROJECT_NAME/$CI_COMMIT_REF_NAME"
+    PROD1_COMPRESS_FILE_TARGET_FOLDER: "/app/gitlab-ci/$CI_PROJECT_NAME/$CI_COMMIT_REF_NAME"
+    PROD2_COMPRESS_FILE_TARGET_FOLDER: "/app/gitlab-ci/$CI_PROJECT_NAME/$CI_COMMIT_REF_NAME"
+
+before_script:
+   ##
+   ## Install ssh-agent if not already installed, it is required by Docker.
+   ## (change apt-get to yum if you use an RPM-based image)
+   ##
+  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+
+   ##
+   ## Run ssh-agent (inside the build environment)
+   ##
+  - eval $(ssh-agent -s)
+
+   ##
+   ## Add the SSH key stored in SSH_PRIVATE_KEY variable to the agent store
+   ## We're using tr to fix line endings which makes ed25519 keys work
+   ## without extra base64 encoding.
+   ## https://gitlab.com/gitlab-examples/ssh-private-key/issues/1#note_48526556
+   ##
+  - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+
+   ##
+   ## Create the SSH directory and give it the right permissions
+   ##
+  - mkdir -p ~/.ssh
+  - chmod 700 ~/.ssh
+
+   ##
+   ## Optionally, if you will be using any Git commands, set the user name and
+   ## and email.
+   ##
+   #- git config --global user.email "user@example.com"
+   #- git config --global user.name "User name"
+
+prepare:
+  image: 192.168.22.149:5000/oyo_pricing_builder
+  stage: build
+  script:
+    - 'if [[ "$CI_COMMIT_REF_NAME" = "master" ]]; then CONFIG_FILE_ENV="prod"; elif [[ "$CI_COMMIT_REF_NAME" = test\/* ]]; then CONFIG_FILE_ENV="test"; elif [[ "$CI_COMMIT_REF_NAME" = uat\/* ]]; then CONFIG_FILE_ENV="uat"; elif [[ "$CI_COMMIT_REF_NAME" = dev_prod\/* ]]; then CONFIG_FILE_ENV="dev_prod"; else CONFIG_FILE_ENV="dev"; fi;'
+    - 'echo replacing config file'
+    - 'echo CONFIG_FILE_ENV=$CONFIG_FILE_ENV'
+    - 'sed -i s/SED_REPLACE_CONFIG_ENV/$CONFIG_FILE_ENV/g om/cron.py KC_MODEL_02/cron.py CHINA_Rebirth/cron.py Liquidation/cron.py hotel_preprocess/cron.py Holiday_future/cron.py Marking_price/cron.py base_data/cron.py Hourly_room/cron.py Virtual_clubbing/cron.py'
+    - 'echo Archiving files'
+    - 'tar -czvf ${TAR_FILE_NAME} *'
+  artifacts:
+    paths:
+      - ./*.gz
+
+deploy:prod:
+  image: 192.168.22.149:5000/oyo_pricing_builder
+  stage: deploy
+  environment:
+    name: production
+  only:
+    - master
+  script:
+    # deploy to PROD1
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${PROD1_AUTH_USER_WITH_URL} mkdir -p ${PROD1_EXTRACT_TARGET_FOLDER}'
+    - 'echo Backing up old files on PROD1'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${PROD1_AUTH_USER_WITH_URL} tar --overwrite -czvf ${BACKUP_FILE_PATH} ${PROD1_EXTRACT_TARGET_FOLDER}'
+    - 'echo Removing old files on PROD1'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${PROD1_AUTH_USER_WITH_URL} rm -rf ${PROD1_EXTRACT_TARGET_FOLDER}'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${PROD1_AUTH_USER_WITH_URL} mkdir -p ${PROD1_EXTRACT_TARGET_FOLDER}'
+    - 'echo Uploading files on PROD1'
+    - 'scp ${SSH_IGNORE_HOST_CHECKING} -v ${TAR_FILE_NAME} ${PROD1_AUTH_USER_WITH_URL}:${PROD1_COMPRESS_FILE_TARGET_FOLDER}'
+    - 'echo File uploading done on PROD1'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${PROD1_AUTH_USER_WITH_URL} tar -xvf ${PROD1_COMPRESS_FILE_TARGET_FOLDER}/${TAR_FILE_NAME} -C ${PROD1_EXTRACT_TARGET_FOLDER}'
+    - 'echo File unarchiving done on PROD1'
+    - 'echo "branch: $CI_COMMIT_REF_NAME deploy on PROD1 succeeded"'
+
+    # deploy to PROD2
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${PROD2_AUTH_USER_WITH_URL} mkdir -p ${PROD2_EXTRACT_TARGET_FOLDER}'
+    - 'echo Backing up old files on PROD2'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${PROD2_AUTH_USER_WITH_URL} tar --overwrite -czvf ${BACKUP_FILE_PATH} ${PROD2_EXTRACT_TARGET_FOLDER}'
+    - 'echo Removing old files on PROD2'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${PROD2_AUTH_USER_WITH_URL} rm -rf ${PROD2_EXTRACT_TARGET_FOLDER}'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${PROD2_AUTH_USER_WITH_URL} mkdir -p ${PROD2_EXTRACT_TARGET_FOLDER}'
+    - 'echo Uploading files on PROD2'
+    - 'scp ${SSH_IGNORE_HOST_CHECKING} -v ${TAR_FILE_NAME} ${PROD2_AUTH_USER_WITH_URL}:${PROD2_COMPRESS_FILE_TARGET_FOLDER}'
+    - 'echo File uploading done on PROD2'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${PROD2_AUTH_USER_WITH_URL} tar -xvf ${PROD2_COMPRESS_FILE_TARGET_FOLDER}/${TAR_FILE_NAME} -C ${PROD2_EXTRACT_TARGET_FOLDER}'
+    - 'echo File unarchiving done on PROD2'
+    - 'echo "branch: $CI_COMMIT_REF_NAME deploy on PROD2 succeeded"'
+
+deploy:feature:
+  image: 192.168.22.149:5000/oyo_pricing_builder
+  stage: deploy
+  environment:
+    name: production
+  only:
+    - /^feature\/.*$/
+  script:
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${DEV_AUTH_USER_WITH_URL} mkdir -p ${DEV_EXTRACT_TARGET_FOLDER}'
+    - 'echo Removing old files'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${DEV_AUTH_USER_WITH_URL} rm -rf ${DEV_EXTRACT_TARGET_FOLDER}'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${DEV_AUTH_USER_WITH_URL} mkdir -p ${DEV_EXTRACT_TARGET_FOLDER}'
+    - 'echo Uploading files'
+    - 'scp ${SSH_IGNORE_HOST_CHECKING} -v ${TAR_FILE_NAME} ${DEV_AUTH_USER_WITH_URL}:${DEV_COMPRESS_FILE_TARGET_FOLDER}'
+    - 'echo File uploading done'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${DEV_AUTH_USER_WITH_URL} tar -xvf ${DEV_COMPRESS_FILE_TARGET_FOLDER}/${TAR_FILE_NAME} -C ${DEV_EXTRACT_TARGET_FOLDER}'
+    - 'echo File unarchiving done'
+    - 'echo "branch: $CI_COMMIT_REF_NAME deploy succeeded"'
+  dependencies:
+    - prepare
+
+deploy:dev_prod:
+  image: 192.168.22.149:5000/oyo_pricing_builder
+  stage: deploy
+  environment:
+    name: production
+  only:
+    - /^dev_prod\/.*$/
+  script:
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${DEV_AUTH_USER_WITH_URL} mkdir -p ${DEV_EXTRACT_TARGET_FOLDER}'
+    - 'echo Removing old files'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${DEV_AUTH_USER_WITH_URL} rm -rf ${DEV_EXTRACT_TARGET_FOLDER}'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${DEV_AUTH_USER_WITH_URL} mkdir -p ${DEV_EXTRACT_TARGET_FOLDER}'
+    - 'echo Uploading files'
+    - 'scp ${SSH_IGNORE_HOST_CHECKING} -v ${TAR_FILE_NAME} ${DEV_AUTH_USER_WITH_URL}:${DEV_COMPRESS_FILE_TARGET_FOLDER}'
+    - 'echo File uploading done'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${DEV_AUTH_USER_WITH_URL} tar -xvf ${DEV_COMPRESS_FILE_TARGET_FOLDER}/${TAR_FILE_NAME} -C ${DEV_EXTRACT_TARGET_FOLDER}'
+    - 'echo File unarchiving done'
+    - 'echo "branch: $CI_COMMIT_REF_NAME deploy succeeded"'
+  dependencies:
+    - prepare
+
+deploy:bugfix:
+  image: 192.168.22.149:5000/oyo_pricing_builder
+  stage: deploy
+  environment:
+    name: production
+  only:
+    - /^bugfix\/.*$/
+  script:
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${DEV_AUTH_USER_WITH_URL} mkdir -p ${DEV_EXTRACT_TARGET_FOLDER}'
+    - 'echo Removing old files'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${DEV_AUTH_USER_WITH_URL} rm -rf ${DEV_EXTRACT_TARGET_FOLDER}'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${DEV_AUTH_USER_WITH_URL} mkdir -p ${DEV_EXTRACT_TARGET_FOLDER}'
+    - 'echo Uploading files'
+    - 'scp ${SSH_IGNORE_HOST_CHECKING} -v ${TAR_FILE_NAME} ${DEV_AUTH_USER_WITH_URL}:${DEV_COMPRESS_FILE_TARGET_FOLDER}'
+    - 'echo File uploading done'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${DEV_AUTH_USER_WITH_URL} tar -xvf ${DEV_COMPRESS_FILE_TARGET_FOLDER}/${TAR_FILE_NAME} -C ${DEV_EXTRACT_TARGET_FOLDER}'
+    - 'echo File unarchiving done'
+    - 'echo "branch: $CI_COMMIT_REF_NAME deploy succeeded"'
+  dependencies:
+    - prepare
+
+deploy:test:
+  image: 192.168.22.149:5000/oyo_pricing_builder
+  stage: deploy
+  environment:
+    name: production
+  only:
+    - /^test\/.*$/
+  script:
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${TEST_AUTH_USER_WITH_URL} mkdir -p ${TEST_EXTRACT_TARGET_FOLDER}'
+    - 'echo Removing old files'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${TEST_AUTH_USER_WITH_URL} rm -rf ${TEST_EXTRACT_TARGET_FOLDER}'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${TEST_AUTH_USER_WITH_URL} mkdir -p ${TEST_EXTRACT_TARGET_FOLDER}'
+    - 'echo Uploading files'
+    - 'scp ${SSH_IGNORE_HOST_CHECKING} -v ${TAR_FILE_NAME} ${TEST_AUTH_USER_WITH_URL}:${TEST_COMPRESS_FILE_TARGET_FOLDER}'
+    - 'echo File uploading done'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${TEST_AUTH_USER_WITH_URL} tar -xvf ${TEST_COMPRESS_FILE_TARGET_FOLDER}/${TAR_FILE_NAME} -C ${TEST_EXTRACT_TARGET_FOLDER}'
+    - 'echo File unarchiving done'
+    - 'echo "branch: $CI_COMMIT_REF_NAME deploy succeeded"'
+  dependencies:
+    - prepare
+
+deploy:uat:
+  image: 192.168.22.149:5000/oyo_pricing_builder
+  stage: deploy
+  environment:
+    name: production
+  only:
+    - /^uat\/.*$/
+  script:
+    # deploy to PROD1
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${UAT1_AUTH_USER_WITH_URL} mkdir -p ${UAT1_EXTRACT_TARGET_FOLDER}'
+    - 'echo Removing old files on PROD1'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${UAT1_AUTH_USER_WITH_URL} rm -rf ${UAT1_EXTRACT_TARGET_FOLDER}'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${UAT1_AUTH_USER_WITH_URL} mkdir -p ${UAT1_EXTRACT_TARGET_FOLDER}'
+    - 'echo Uploading files on PROD1'
+    - 'scp ${SSH_IGNORE_HOST_CHECKING} -v ${TAR_FILE_NAME} ${UAT1_AUTH_USER_WITH_URL}:${UAT1_COMPRESS_FILE_TARGET_FOLDER}'
+    - 'echo File uploading done on PROD1'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${UAT1_AUTH_USER_WITH_URL} tar -xvf ${UAT1_COMPRESS_FILE_TARGET_FOLDER}/${TAR_FILE_NAME} -C ${UAT1_EXTRACT_TARGET_FOLDER}'
+    - 'echo File unarchiving done on PROD1'
+    - 'echo "branch: $CI_COMMIT_REF_NAME deploy on PROD1 succeeded"'
+
+    # deploy to PROD2
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${UAT2_AUTH_USER_WITH_URL} mkdir -p ${UAT2_EXTRACT_TARGET_FOLDER}'
+    - 'echo Removing old files on PROD2'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${UAT2_AUTH_USER_WITH_URL} rm -rf ${UAT2_EXTRACT_TARGET_FOLDER}'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${UAT2_AUTH_USER_WITH_URL} mkdir -p ${UAT2_EXTRACT_TARGET_FOLDER}'
+    - 'echo Uploading files on PROD2'
+    - 'scp ${SSH_IGNORE_HOST_CHECKING} -v ${TAR_FILE_NAME} ${UAT2_AUTH_USER_WITH_URL}:${UAT2_COMPRESS_FILE_TARGET_FOLDER}'
+    - 'echo File uploading done on PROD2'
+    - 'ssh ${SSH_IGNORE_HOST_CHECKING} ${UAT2_AUTH_USER_WITH_URL} tar -xvf ${UAT2_COMPRESS_FILE_TARGET_FOLDER}/${TAR_FILE_NAME} -C ${UAT2_EXTRACT_TARGET_FOLDER}'
+    - 'echo File unarchiving done on PROD2'
+    - 'echo "branch: $CI_COMMIT_REF_NAME deploy on PROD2 succeeded"'
+  dependencies:
+    - prepare
